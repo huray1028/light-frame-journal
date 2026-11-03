@@ -1,0 +1,134 @@
+[
+  {
+    "slug": "market-colours-plan",
+    "title": "市場的一抹紅：練習從顏色找主角",
+    "date": "2026-11-04",
+    "location": "",
+    "tags": [
+      "構圖",
+      "練習計畫"
+    ],
+    "summary": "先找一攤有紅色蔬果的攤位，從不擋住客人的位置觀察。預計拍一張帶有招牌的廣景，再靠近拍只留下紅色和旁邊一個對比色的版本。",
+    "cover": "",
+    "photos": [],
+    "camera": "",
+    "lens": "",
+    "settings": {},
+    "story": [
+      "先找一攤有紅色蔬果的攤位，從不擋住客人的位置觀察。預計拍一張帶有招牌的廣景，再靠近拍只留下紅色和旁邊一個對比色的版本。"
+    ],
+    "whatILearned": [
+      "這是示範拍攝計畫，觀察結果待拍攝後補寫。"
+    ],
+    "nextTime": [
+      "回看兩張照片，記下第一眼看到哪裡，以及哪些邊緣元素搶走視線。"
+    ],
+    "relatedLessons": [
+      "composition-basics"
+    ],
+    "isSample": true
+  },
+  {
+    "slug": "window-shadow-plan",
+    "title": "午後窗影：替一個平凡的角落寫日誌",
+    "date": "2026-11-04",
+    "location": "",
+    "tags": [
+      "光線",
+      "練習計畫"
+    ],
+    "summary": "準備在窗旁放一只杯子。先觀察窗框投影和杯子的相對位置，再移動杯子，讓影子剛好與杯緣相接。",
+    "cover": "",
+    "photos": [],
+    "camera": "",
+    "lens": "",
+    "settings": {},
+    "story": [
+      "準備在窗旁放一只杯子。先觀察窗框投影和杯子的相對位置，再移動杯子，讓影子剛好與杯緣相接。"
+    ],
+    "whatILearned": [
+      "這是示範拍攝計畫，觀察結果待拍攝後補寫。"
+    ],
+    "nextTime": [
+      "保持機位拍兩張，記下光影有沒有讓杯子的輪廓更容易辨認。"
+    ],
+    "relatedLessons": [
+      "composition-basics"
+    ],
+    "isSample": true
+  },
+  {
+    "slug": "daylight-reading-plan",
+    "title": "日間攝影練習簿：書脊、水流與白杯",
+    "date": "2026-11-04",
+    "location": "",
+    "tags": [
+      "閱讀筆記",
+      "日間攝影",
+      "練習計畫"
+    ],
+    "summary": "從三篇文章各挑一個可用日常物件回答的問題。這是拍攝前的示範筆記。",
+    "cover": "",
+    "photos": [],
+    "camera": "",
+    "lens": "",
+    "settings": {},
+    "story": [
+      "閱讀後，我想先拍窗邊的書：光圈改變時，前後兩本的字還能讀嗎？接著試水流的線條，最後回到窗邊比較白杯的色偏。"
+    ],
+    "whatILearned": [
+      "三組比較各有不同的判斷依據：文字清晰範圍、水滴的軌跡、白色物體的冷暖。每次只提出一個拍攝問題，回看時比較容易辨認差異。"
+    ],
+    "nextTime": [
+      "先從下方任選一堂短課，依步驟拍一組照片。回寫時附兩張對照、實際設定、一句觀察與一個仍想重試的問題。"
+    ],
+    "relatedLessons": [
+      "depth-of-field",
+      "camera-shutter-speed",
+      "white-balance"
+    ],
+    "isSample": true
+  },
+  {
+    "slug": "first-blue-hour-plan",
+    "title": "我的第一份藍調時光拍攝計畫",
+    "date": "2026-11-03",
+    "location": "",
+    "tags": [
+      "藍調時光",
+      "拍攝計畫",
+      "城市風景"
+    ],
+    "summary": "在真正出發前，先把時間、測光、構圖與現場觀察整理成一份可以執行的清單。",
+    "cover": "",
+    "photos": [],
+    "camera": "",
+    "lens": "",
+    "settings": {
+      "focalLength": "",
+      "aperture": "",
+      "shutter": "",
+      "iso": ""
+    },
+    "story": [
+      "這篇是尚未實拍的學習計畫。我想先觀察日落後天空由暖色轉向深藍的速度，以及城市燈光何時開始與天空取得平衡。",
+      "預計在日落前提早抵達，先找好能同時容納天空層次與地面主體的位置，再依光線變化調整曝光。地點、天氣與實際結果都要等完成拍攝後再補。"
+    ],
+    "whatILearned": [
+      "藍調時光不是固定的一個時刻，而是一段會受季節、緯度、天氣與拍攝方向影響的短暫光線窗口。",
+      "先決定是否要保留車流、海面或行人的動感，再選快門速度，比先背一組參數更合理。"
+    ],
+    "nextTime": [
+      "比較自動白平衡與固定色溫對天空藍色和路燈暖色的影響。",
+      "在不更換構圖的情況下，記錄三個不同時間點的曝光設定與直方圖。",
+      "拍攝完成後補上真實地點、照片、EXIF 與現場反思。"
+    ],
+    "relatedLessons": [
+      "exposure-basics",
+      "composition-basics",
+      "reduce-night-shake",
+      "blue-hour-workflow"
+    ],
+    "isSample": true
+  }
+]
