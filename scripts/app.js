@@ -87,12 +87,13 @@ function homeView(journals, lessons) {
         <div class="hero-actions"><a class="button" href="#latest-journals">閱讀最新日誌</a><a class="button secondary" href="index.html?view=lessons">開始攝影教學</a></div>
       </div>
       <aside class="hero-note"><p class="eyebrow">最新作品</p><p id="photo-caption">等待第一張作品</p>
-      ${['127.0.0.1','localhost'].includes(location.hostname) ? `<details><summary>上傳首頁照片</summary><form id="featured-form">
+      <details><summary>上傳首頁照片</summary><form id="featured-form">
       <label>照片<input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required></label>
       <label>作品說明（選填）<input name="caption" maxlength="160"></label>
       <label>相機或手機（選填）<input name="camera" maxlength="160"></label>
       <label>鏡頭（選填）<input name="lens" maxlength="160"></label>
-      <button class="button">設為首頁背景</button><small role="status"></small></form></details>` : ''}</aside>
+      <button class="button">設為首頁背景</button><small role="status"></small></form>
+      <small class="storage-note">${isLocalEditor() ? '照片會加入專案檔案。' : '照片只保存在目前瀏覽器，不會自動上傳到 GitHub。'}</small></details></aside>
     </section>
 
     <section class="section" aria-labelledby="latest-journals">
@@ -190,7 +191,8 @@ function aboutView() {
 async function loadData() {
   const [journalResponse, lessonResponse] = await Promise.all([fetch('content/journals.json'), fetch('content/lessons.json')]);
   if (!journalResponse.ok || !lessonResponse.ok) throw new Error('內容資料讀取失敗');
-  return { journals: (await journalResponse.json()).filter(item=>!item.archived), lessons: (await lessonResponse.json()).filter(item=>!item.archived) };
+  const baseJournals = (await journalResponse.json()).filter(item=>!item.archived);
+  return { journals: mergeBrowserJournals(baseJournals), lessons: (await lessonResponse.json()).filter(item=>!item.archived) };
 }
 
 async function render() {
@@ -209,11 +211,9 @@ async function render() {
       const item = collection.find(entry => entry.slug === slug);
       main.innerHTML = item ? (type === 'journal' ? journalArticle(item, lessons) : lessonArticle(item, journals, lessons)) : '<div class="page"><div class="empty error">找不到這篇文章。<br><a href="index.html">返回日誌首頁</a></div></div>';
     } else main.innerHTML = homeView(journals, lessons);
-    if (['localhost','127.0.0.1'].includes(location.hostname)) {
-      const item=view==='article' && params.get('type')==='journal' && journals.find(j=>j.slug===params.get('slug'));
-      if(item || view==='journals') journalForm(main,item || null,params.has('new'));
-      if(view==='home') main.querySelector('.journal-grid')?.insertAdjacentHTML('beforebegin','<p><a class="button secondary" href="index.html?view=journals&new=1">＋ 寫日誌</a></p>');
-    }
+    const item=view==='article' && params.get('type')==='journal' && journals.find(j=>j.slug===params.get('slug'));
+    if(item || view==='journals') journalForm(main,item || null,params.has('new'));
+    if(view==='home') main.querySelector('.journal-grid')?.insertAdjacentHTML('beforebegin','<p><a class="button secondary" href="index.html?view=journals&new=1">＋ 寫日誌</a></p>');
     document.title = `${main.querySelector('h1')?.textContent || '光影日誌'}｜Light & Frame`;
   } catch (error) {
     main.innerHTML = `<div class="page"><div class="empty error">無法載入內容。請使用本機 HTTP server 預覽，而不是直接開啟檔案。<br>${escapeHtml(error.message)}</div></div>`;
@@ -224,7 +224,9 @@ async function showFeatured(record) {
   const hero = document.querySelector('.journal-hero');
   if (!record || !hero) return;
   const photo = new Image();
-  photo.src = safeAssetPath(record.src);
+  const source = /^data:image\/jpeg;base64,/.test(record.dataUrl || '') ? record.dataUrl : safeAssetPath(record.src);
+  if (!source) return;
+  photo.src = source;
   photo.alt = record.caption || '最新攝影作品';
   await photo.decode();
   hero.querySelector('.featured-image')?.remove();
@@ -237,8 +239,12 @@ async function showFeatured(record) {
 async function initFeatured() {
   if (!document.querySelector('.journal-hero')) return;
   try {
-    const response = await fetch('content/featured-photo.json', {cache:'no-store'});
-    if (response.ok) await showFeatured(await response.json());
+    const browserRecord = getBrowserFeatured();
+    if (browserRecord) await showFeatured(browserRecord);
+    else {
+      const response = await fetch('content/featured-photo.json', {cache:'no-store'});
+      if (response.ok) await showFeatured(await response.json());
+    }
   } catch { /* Keep the gradient when no image is available. */ }
   const form = document.querySelector('#featured-form');
   form?.addEventListener('submit', async event => {
@@ -249,28 +255,34 @@ async function initFeatured() {
     status.textContent = '正在儲存…';
     try {
       const bitmap = await createImageBitmap(form.elements.photo.files[0]);
-      const scale = Math.min(1, 2200 / Math.max(bitmap.width, bitmap.height));
+      const longestEdge = isLocalEditor() ? 2200 : 1400;
+      const scale = Math.min(1, longestEdge / Math.max(bitmap.width, bitmap.height));
       const canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.round(bitmap.width * scale));
       canvas.height = Math.max(1, Math.round(bitmap.height * scale));
       canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
       bitmap.close();
-      const body = await new Promise(resolve => canvas.toBlob(resolve,'image/jpeg',0.88));
-      if (!body) throw Error();
       const fields = new URLSearchParams();
       for (const key of ['caption','camera','lens']) fields.set(key,form.elements[key].value);
-      const result = await fetch('featured-photo?' + fields,{method:'POST',headers:{'Content-Type':'image/jpeg'},body});
-      if (result.status === 404 && location.port === '8000') {
-        const link = document.createElement('a');
-        link.href = 'http://127.0.0.1:8001/';
-        link.textContent = '開啟支援上傳的新版首頁';
-        status.replaceChildren('這個預覽只支援瀏覽。',link);
-        return;
+      if (isLocalEditor()) {
+        const body = await new Promise(resolve => canvas.toBlob(resolve,'image/jpeg',0.88));
+        if (!body) throw Error();
+        const result = await fetch('featured-photo?' + fields,{method:'POST',headers:{'Content-Type':'image/jpeg'},body});
+        if (!result.ok) throw Error();
+        await showFeatured(await result.json());
+      } else {
+        const record = {
+          dataUrl: canvas.toDataURL('image/jpeg', 0.8),
+          uploadedAt: new Date().toISOString(),
+          caption: form.elements.caption.value.trim(),
+          camera: form.elements.camera.value.trim(),
+          lens: form.elements.lens.value.trim()
+        };
+        saveBrowserFeatured(record);
+        await showFeatured(record);
       }
-      if (!result.ok) throw Error();
-      await showFeatured(await result.json());
       status.textContent = '已儲存為首頁背景。';
-    } catch { status.textContent = '無法儲存。請選擇 JPG、PNG 或 WebP，並使用專案的本機預覽。'; }
+    } catch { status.textContent = '無法儲存。請選擇較小的 JPG、PNG 或 WebP 圖片。'; }
     finally { button.disabled = false; }
   });
 }
@@ -313,3 +325,4 @@ async function courseControls() {
 }
 render().then(()=>Promise.all([initFeatured(),courseControls()]));
 import { journalForm } from './journal-form.js';
+import {getBrowserFeatured, isLocalEditor, mergeBrowserJournals, saveBrowserFeatured} from './browser-store.js';

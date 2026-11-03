@@ -22,7 +22,7 @@
 | `assets/images/`、`content/featured-photo.json`、`content/practice-work.json` | 分別保存作品圖檔、最近上傳的首頁作品資料、依教學 slug 關聯的練習作品。 |
 | `raw/sources/`、`wiki/concepts/` | 前者保留來源紀錄；後者用自己的文字整理可重用的概念。`wiki/index.md` 是入口，`wiki/log.md` 只追加異動紀錄。 |
 | `index.html`、`scripts/app.js`、`styles/main.css` | 共用頁面、資料呈現與視覺樣式。文章網址採 `index.html?view=article&type=journal&slug=...`；教學使用 `type=lesson`。 |
-| `scripts/serve.mjs`、`scripts/course-editor.mjs`、`scripts/journal-form.js` | 本機編輯入口與表單。GitHub Pages 只展示已提交的資料與照片，不執行寫入服務。 |
+| `scripts/serve.mjs`、`scripts/course-editor.mjs`、`scripts/journal-form.js` | 編輯入口與表單。本機預覽可把內容寫入專案檔案；GitHub Pages 以瀏覽器儲存保存首頁照片及日誌，資料只存在該瀏覽器。 |
 
 使用繁體中文（臺灣用語）。保留首頁、全部日誌、攝影教學、關於本站四個入口。沿用深藍灰背景、暖白文字與共用卡片；桌面可多欄，手機單欄。圖片提供替代文字，按鈕支援鍵盤與可見焦點。無照片用漸層或空圖提示，不以外部圖片冒充作品。首頁依**上傳時間**選背景；日誌依**文章日期**由新到舊；教學依**課程順序**排列。
 
@@ -36,7 +36,7 @@
 - 作品與設備：`cover、photos、camera、lens、settings`。settings 保留 focalLength、aperture、shutter、iso。作品放在 `assets/images/journals/<slug>/`，檔名用小寫英文、數字與連字號。
 - 正文與關聯：`story、whatILearned、nextTime、relatedLessons`。分別回答「看見或拍了什麼？」「學到什麼？」「下次要試什麼？」。若有對應課程，核對 slug 並維護反向連結。
 
-未提供的器材、參數與地點留空；不猜 EXIF，不替作者編造經歷。尚未實拍的示例或計畫標記 `isSample: true`。本機可新增、編輯或確認後下架日誌；修改保留原 slug、照片與關聯。作者可直接保存原文。只有主動選擇潤飾時才使用本機已登入的 Codex；建議先供比較，採用與否由作者決定，不增加原文沒有的事實。
+未提供的器材、參數與地點留空；不猜 EXIF，不替作者編造經歷。尚未實拍的示例或計畫標記 `isSample: true`。日誌可新增、編輯或確認後下架；修改保留原 slug、照片與關聯。公開網站使用瀏覽器儲存，因此換裝置或清除網站資料不會同步；需要成為全站公開內容時，仍由 Agent 寫入 JSON、提交並推送。作者可直接保存原文。只有主動選擇潤飾時才使用本機已登入的 Codex；建議先供比較，採用與否由作者決定，不增加原文沒有的事實。
 
 **新增教學。** 在 lessons.json 建立一筆，保留 `slug、title、updatedAt、order、stage、level、tags、summary、cover、goal、sections、practice、sources、relatedJournals、isSample`。order 是唯一正整數，通常接在最後一課；stage 優先沿用既有階段。sections 以 heading 和 paragraphs 說明情境、操作、觀察重點與常見錯誤；practice 至少有一項可執行的練習，寫明改變什麼、保持什麼、如何比較。relatedJournals 只引用現有日誌。確認下架後標記 archived，保留照片、來源與 slug，公開頁面不再列出。
 
