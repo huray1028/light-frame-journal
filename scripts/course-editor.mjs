@@ -96,6 +96,19 @@ function editJournal(path, slug, fields) {
     const title=String(fields.title||'').trim(), story=String(fields.story||'');
     if(!title||title.length>120||!story.trim()||story.length>12000||!/^\d{4}-\d{2}-\d{2}$/.test(fields.date))throw Error('請確認標題、日期及正文。');
     const item=old||{slug:'journal-'+randomUUID(),tags:[],cover:'',photos:[],relatedLessons:[],settings:{}};
+    const photos=fields.newPhotos||[];
+    if(!Array.isArray(photos)||photos.length>6)throw Error('每次最多六張照片。');
+    const buffers=photos.map(src=>{
+      if(typeof src!=='string'||!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(src))throw Error('照片格式無效。');
+      const buffer=Buffer.from(src.split(',')[1],'base64');
+      if(buffer.length<4||buffer.readUInt16BE(0)!==0xffd8||buffer.readUInt16BE(buffer.length-2)!==0xffd9)throw Error('無效的 JPEG 照片。');
+      return buffer;
+    });
+    for(const buffer of buffers){
+      const folder='assets/images/journals/'+item.slug;mkdirSync(folder,{recursive:true});
+      const src=folder+'/'+randomUUID()+'.jpg';writeFileSync(src,buffer);
+      item.photos.push({src,alt:title+'的拍攝作品'});item.cover ||= src;
+    }
     Object.assign(item,{title,story:story.split(/\r?\n/),date:fields.date,isSample:fields.kind==='plan',summary:fields.summary||story.trim().slice(0,100),location:fields.location||'',camera:fields.camera||'',lens:fields.lens||'',whatILearned:(fields.learned||'').split('\n').filter(Boolean),nextTime:(fields.next||'').split('\n').filter(Boolean)});
     if(!old)items.unshift(item);
     slug=item.slug;

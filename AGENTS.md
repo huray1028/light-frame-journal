@@ -32,6 +32,8 @@
 
 **新增日誌。** 在 journals.json 建立一筆，沿用既有資料型別：
 
+新增與編輯表單必須提供照片上傳與預覽，每次最多六張，縮圖後保存。保留原照片，沒有封面時使用第一張。本機 JPEG 放在該日誌資料夾；公開版存在瀏覽器。保存失敗不得跳頁或清空正文。照片入口檢查與尚未完成項見 docs/SITE_REVIEW.md。
+
 - 識別與摘要：`slug、title、date、location、tags、summary、isSample`。
 - 作品與設備：`cover、photos、camera、lens、settings`。settings 保留 focalLength、aperture、shutter、iso。作品放在 `assets/images/journals/<slug>/`，檔名用小寫英文、數字與連字號。
 - 正文與關聯：`story、whatILearned、nextTime、relatedLessons`。分別回答「看見或拍了什麼？」「學到什麼？」「下次要試什麼？」。若有對應課程，核對 slug 並維護反向連結。

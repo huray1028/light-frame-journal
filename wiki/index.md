@@ -23,6 +23,8 @@
 
 ## 網站內容對照
 
+- [網站檢查與改善清單](../docs/SITE_REVIEW.md)：三種照片入口與後續限制。
+
 - 日誌範例包含市場色彩構圖與午後窗影兩個拍攝計畫，可從「全部日誌」閱讀或編輯。
 
 - 日誌資料：[`content/journals.json`](../content/journals.json)

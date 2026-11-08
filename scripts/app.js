@@ -32,6 +32,7 @@ function safeWebUrl(value) {
 }
 
 function safeAssetPath(value) {
+  if (/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(String(value||''))) return value;
   const path = String(value || '').trim().replace(/\\/g, '/');
   if (!path || path.startsWith('/') || path.startsWith('//') || path.includes('..') || /^[a-z]+:/i.test(path)) return '';
   return path;
