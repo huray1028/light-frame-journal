@@ -192,7 +192,8 @@ async function loadData() {
   const [journalResponse, lessonResponse] = await Promise.all([fetch('content/journals.json'), fetch('content/lessons.json')]);
   if (!journalResponse.ok || !lessonResponse.ok) throw new Error('內容資料讀取失敗');
   const baseJournals = (await journalResponse.json()).filter(item=>!item.archived);
-  return { journals: mergeBrowserJournals(baseJournals), lessons: (await lessonResponse.json()).filter(item=>!item.archived) };
+  const lessons=(await lessonResponse.json()).filter(item=>!item.archived);
+  return { journals: mergeBrowserJournals(baseJournals), lessons: isLocalEditor()?lessons:mergedLessons(lessons) };
 }
 
 async function render() {
@@ -289,18 +290,18 @@ async function initFeatured() {
 async function courseControls() {
   const local=['localhost','127.0.0.1'].includes(location.hostname);
   const params=new URLSearchParams(location.search);
-  const list=main.querySelector('.course-overview');
+  const list=main.querySelector('.lesson-steps-page');
   const nav=main.querySelector('.lesson-nav');
-  if(list && local) list.insertAdjacentHTML('afterend',`<details class="editor"><summary>＋ 加入文章，產生教學</summary><form data-edit="article">
+  if(list) list.insertAdjacentHTML('afterend',`<section class="editor"><h2>＋ 新增教學</h2><p>可以先到 <a href="https://www.cambridgeincolour.com/tutorials.htm" target="_blank" rel="noopener noreferrer">Cambridge in Colour 攝影教學</a> 找一篇感興趣的文章，再回來寫下重點。</p><p>${local?'內容儲存至專案。':'內容只保存在目前瀏覽器，不會同步到其他裝置或 GitHub。'}</p><form data-edit="article">
     <label>文章名稱<input name="title" required maxlength="120"></label><label>來源網址（選填）<input name="url" type="url"></label><label>作者（選填）<input name="author"></label>
     <label>用自己的話寫下文章重點<textarea name="note" required minlength="8" maxlength="1000"></textarea></label><small>依你填寫的重點與攝影主題，立即編成對照練習。網址用於保留出處。</small>
-    <button class="button">產生教學</button><output aria-live="polite"></output></form></details>`);
+    <button class="button">產生教學</button><output aria-live="polite"></output></form></section>`);
   if(nav){
-    nav.insertAdjacentHTML('beforebegin',`<section class="article-section"><h2>本課練習作品</h2><div id="works"></div>${local?`<form class="editor" data-edit="photo"><label>選擇練習照片<input name="photo" type="file" required accept="image/png,image/jpeg,image/webp"></label><label>這次觀察到什麼？（選填）<textarea name="note" maxlength="500"></textarea></label><button class="button">上傳本課作品</button><output aria-live="polite"></output></form>`:''}</section>`);
-    if(local)nav.insertAdjacentHTML('afterend','<form class="editor" data-edit="delete"><button class="button secondary">刪除這堂教學</button><output aria-live="polite"></output></form>');
+    nav.insertAdjacentHTML('beforebegin',`<section class="article-section"><h2>上傳我的練習作業</h2><p>${local?'照片會儲存至專案。':'照片與心得只保存在目前瀏覽器，重新整理後仍保留；清除網站資料會遺失。'}</p><form class="editor" data-edit="photo"><label>選擇練習照片<input name="photo" type="file" required accept="image/png,image/jpeg,image/webp"></label><label>這次觀察到什麼？（選填）<textarea name="note" maxlength="500"></textarea></label><button class="button">上傳本課作品</button><output aria-live="polite"></output></form><div id="works"></div></section>`);
+    nav.insertAdjacentHTML('afterend','<form class="editor" data-edit="delete"><button class="button secondary">刪除這堂教學</button><output aria-live="polite"></output></form>');
     const works=await fetch('content/practice-work.json',{cache:'no-store'}).then(r=>r.json());
-    const matching=works.filter(w=>w.slug===params.get('slug')).reverse();
-    main.querySelector('#works').innerHTML=matching.map(w=>`<figure class="article-photo"><img src="${escapeHtml(safeAssetPath(w.src))}" alt="${escapeHtml(w.note||'本課練習作品')}"><figcaption>${escapeHtml(w.date)} · ${escapeHtml(w.note||'實拍練習')}</figcaption></figure>`).join('')||'<p>目前尚無練習照片。</p>';
+    const matching=[...works,...(local?[]:courseState().works)].filter(w=>w.slug===params.get('slug')).reverse();
+    main.querySelector('#works').innerHTML=matching.map(w=>`<figure class="article-photo"><img src="${escapeHtml(/^data:image\/jpeg;base64,/.test(w.src)?w.src:safeAssetPath(w.src))}" alt="${escapeHtml(w.note||'本課練習作品')}"><figcaption>${escapeHtml(w.date)} · ${escapeHtml(w.note||'實拍練習')}</figcaption></figure>`).join('')||'<p>目前尚無練習照片。</p>';
   }
   for(const form of main.querySelectorAll('[data-edit]')) form.onsubmit=async event=>{
     event.preventDefault();
@@ -308,6 +309,17 @@ async function courseControls() {
     if(kind==='delete'&&!confirm('移除「'+main.querySelector('h1').textContent+'」？這堂課將從網站下架，來源及已交的照片會保留。'))return;
     button.disabled=true;status.textContent='正在儲存…';
     try{
+      if(!local){
+        if(kind==='article'){const {lessons}=await loadData();const result=addLesson(Object.fromEntries(fields),lessons);location.href=articleUrl('lesson',result.slug);}
+        else if(kind==='delete'){removeLesson(slug);location.href='index.html?view=lessons';}
+        else if(kind==='photo'){
+          const bitmap=await createImageBitmap(fields.get('photo')),scale=Math.min(1,1200/Math.max(bitmap.width,bitmap.height));
+          const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+          canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();
+          saveWork({slug,src:canvas.toDataURL('image/jpeg',0.75),note:String(fields.get('note')||''),date:new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Taipei'})});location.reload();
+        }
+        return;
+      }
       const query=new URLSearchParams({slug});let body, type='application/json';
       if(kind==='photo'){
         const bitmap=await createImageBitmap(fields.get('photo')), scale=Math.min(1,2200/Math.max(bitmap.width,bitmap.height));
@@ -325,4 +337,5 @@ async function courseControls() {
 }
 render().then(()=>Promise.all([initFeatured(),courseControls()]));
 import { journalForm } from './journal-form.js';
+import {courseState, mergedLessons, addLesson, saveWork, removeLesson} from './course-store.js';
 import {getBrowserFeatured, isLocalEditor, mergeBrowserJournals, saveBrowserFeatured} from './browser-store.js';
