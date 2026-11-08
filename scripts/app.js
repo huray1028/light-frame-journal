@@ -292,6 +292,8 @@ async function courseControls() {
   const params=new URLSearchParams(location.search);
   const list=main.querySelector('.lesson-steps-page');
   const nav=main.querySelector('.lesson-nav');
+  if(list) main.querySelector('.page-intro').insertAdjacentHTML('beforeend','<p><a class="button" href="#new-lesson">＋ 新增攝影教學</a></p>');
+  if(nav) main.querySelector('.article-header').insertAdjacentHTML('afterend','<p><a class="button" href="#practice-upload">上傳我的練習作業</a></p>');
   if(list) list.insertAdjacentHTML('afterend',`<section class="editor"><h2>＋ 新增教學</h2><p>可以先到 <a href="https://www.cambridgeincolour.com/tutorials.htm" target="_blank" rel="noopener noreferrer">Cambridge in Colour 攝影教學</a> 找一篇感興趣的文章，再回來寫下重點。</p><p>${local?'內容儲存至專案。':'內容只保存在目前瀏覽器，不會同步到其他裝置或 GitHub。'}</p><form data-edit="article">
     <label>文章名稱<input name="title" required maxlength="120"></label><label>來源網址（選填）<input name="url" type="url"></label><label>作者（選填）<input name="author"></label>
     <label>用自己的話寫下文章重點<textarea name="note" required minlength="8" maxlength="1000"></textarea></label><small>依你填寫的重點與攝影主題，立即編成對照練習。網址用於保留出處。</small>
@@ -303,6 +305,8 @@ async function courseControls() {
     const matching=[...works,...(local?[]:courseState().works)].filter(w=>w.slug===params.get('slug')).reverse();
     main.querySelector('#works').innerHTML=matching.map(w=>`<figure class="article-photo"><img src="${escapeHtml(/^data:image\/jpeg;base64,/.test(w.src)?w.src:safeAssetPath(w.src))}" alt="${escapeHtml(w.note||'本課練習作品')}"><figcaption>${escapeHtml(w.date)} · ${escapeHtml(w.note||'實拍練習')}</figcaption></figure>`).join('')||'<p>目前尚無練習照片。</p>';
   }
+  main.querySelector('[data-edit="article"]')?.closest('section').setAttribute('id','new-lesson');
+  main.querySelector('[data-edit="photo"]')?.closest('section').setAttribute('id','practice-upload');
   for(const form of main.querySelectorAll('[data-edit]')) form.onsubmit=async event=>{
     event.preventDefault();
     const kind=form.dataset.edit, slug=params.get('slug')||'', fields=new FormData(form), button=form.querySelector('button'), status=form.querySelector('output');
