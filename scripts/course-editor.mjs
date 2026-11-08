@@ -104,11 +104,17 @@ function editJournal(path, slug, fields) {
       if(buffer.length<4||buffer.readUInt16BE(0)!==0xffd8||buffer.readUInt16BE(buffer.length-2)!==0xffd9)throw Error('無效的 JPEG 照片。');
       return buffer;
     });
-    for(const buffer of buffers){
+    if(fields.keptPhotos!==undefined){
+      const allowed=new Set([item.cover,...item.photos.map(p=>typeof p==='string'?p:p.src)]);
+      if(!Array.isArray(fields.keptPhotos)||fields.keptPhotos.some(p=>!allowed.has(p.src)))throw Error('照片不屬於這篇日誌。');
+      item.photos=fields.keptPhotos.map(p=>({src:p.src,alt:String(p.alt||'').slice(0,300)}));
+    }
+    for(const [index,buffer] of buffers.entries()){
       const folder='assets/images/journals/'+item.slug;mkdirSync(folder,{recursive:true});
       const src=folder+'/'+randomUUID()+'.jpg';writeFileSync(src,buffer);
-      item.photos.push({src,alt:title+'的拍攝作品'});item.cover ||= src;
+      item.photos.push({src,alt:String(fields.newPhotoAlts?.[index]||title+'的拍攝作品').slice(0,300)});item.cover ||= src;
     }
+    if(fields.keptPhotos!==undefined)item.cover=item.photos[fields.coverIndex]?.src||item.photos[0]?.src||'';
     Object.assign(item,{title,story:story.split(/\r?\n/),date:fields.date,isSample:fields.kind==='plan',summary:fields.summary||story.trim().slice(0,100),location:fields.location||'',camera:fields.camera||'',lens:fields.lens||'',whatILearned:(fields.learned||'').split('\n').filter(Boolean),nextTime:(fields.next||'').split('\n').filter(Boolean)});
     if(!old)items.unshift(item);
     slug=item.slug;

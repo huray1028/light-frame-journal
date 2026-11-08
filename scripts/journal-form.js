@@ -36,7 +36,8 @@ export function journalForm(main, item, open) {
     <label>標題<input name="title" required maxlength="120"></label>
     <label>日期<input type="date" name="date" required></label>
     <label>今天拍的照片（選填，可多選，最多 6 張）<input type="file" name="journalPhotos" multiple accept="image/jpeg,image/png,image/webp"></label>
-    <p>新照片會加入這篇日誌；沒有封面時，第一張會成為代表作品。原有照片會保留。</p>
+    <p>照片管理：可修改說明、移除照片或指定封面，按下儲存後才會生效。</p>
+    <div class="photo-gallery" data-existing></div>
     <div class="photo-gallery" data-preview></div>
     <label>紀錄類型<select name="kind"><option value="actual">我的觀察或實拍紀錄</option><option value="plan">示範或練習計畫</option></select></label>
     <label>今天看到了什麼？拍到了什麼？<textarea name="story" required maxlength="12000"></textarea></label>
@@ -44,7 +45,7 @@ export function journalForm(main, item, open) {
     <label>列表摘要（選填）<input name="summary"></label>
     <label>地點（選填）<input name="location"></label><label>相機或手機（選填）<input name="camera"></label><label>鏡頭（選填）<input name="lens"></label>
     <label>學到什麼（選填）<textarea name="learned"></textarea></label><label>下次想試什麼（選填）<textarea name="next"></textarea></label>
-    <button class="button">儲存目前正文</button><output aria-live="polite"></output></form></details>`);
+    <button class="button">儲存日誌與照片</button><output aria-live="polite"></output></form></details>`);
   const form = host.nextElementSibling.querySelector('form');
   const fields = form.elements;
   for (const key of ['title','date','summary','location','camera','lens']) fields[key].value = item?.[key] || '';
@@ -54,11 +55,36 @@ export function journalForm(main, item, open) {
   fields.next.value = (item?.nextTime || []).join('\n');
   fields.kind.value = item?.isSample ? 'plan' : 'actual';
   const status = form.querySelector('output');
-  fields.journalPhotos.onchange=()=>{
-    const preview=form.querySelector('[data-preview]');preview.replaceChildren();
-    for(const file of fields.journalPhotos.files){
-      const image=new Image();const url=URL.createObjectURL(file);image.src=url;image.alt=file.name;image.style.maxWidth='100%';image.onload=image.onerror=()=>URL.revokeObjectURL(url);preview.append(image);
+  let kept=(item?.photos||[]).map(p=>typeof p==='string'?{src:p,alt:''}:{...p});
+  if(item?.cover&&!kept.some(p=>p.src===item.cover))kept.unshift({src:item.cover,alt:''});
+  let cover=item?.cover||'', pending=[];
+  function drawPhotos(){
+    for(const [selector,photos] of [['[data-existing]',kept],['[data-preview]',pending]]){
+      const area=form.querySelector(selector);area.replaceChildren();
+      photos.forEach(p=>{
+        const card=document.createElement('div'),img=new Image(),label=document.createElement('label'),input=document.createElement('input'),choose=document.createElement('button'),remove=document.createElement('button');
+        img.src=p.src;img.alt=p.alt||'日誌照片';img.style.maxWidth='100%';
+        label.textContent='照片說明';input.value=p.alt;input.maxLength=300;input.oninput=()=>{p.alt=input.value;};label.append(input);
+        choose.type=remove.type='button';choose.textContent=cover===p.src?'目前封面':'設為封面';choose.onclick=()=>{cover=p.src;drawPhotos();};
+        remove.textContent='移除照片';remove.onclick=()=>{photos.splice(photos.indexOf(p),1);if(cover===p.src)cover=[...kept,...pending][0]?.src||'';drawPhotos();};
+        card.append(img,label,choose,remove);area.append(card);
+      });
     }
+  }
+  drawPhotos();
+  fields.journalPhotos.onchange=async()=>{
+    const button=form.querySelector('.button');button.disabled=true;
+    try{
+      if(pending.length+fields.journalPhotos.files.length>6)throw Error('每次最多新增六張照片。');
+      for(const file of fields.journalPhotos.files){
+        if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw Error('請選 JPG、PNG 或 WebP。');
+        const bitmap=await createImageBitmap(file),scale=Math.min(1,1000/Math.max(bitmap.width,bitmap.height)),canvas=document.createElement('canvas');
+        canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();
+        const src=canvas.toDataURL('image/jpeg',0.75);pending.push({src,alt:file.name});cover ||= src;
+      }
+      status.textContent='照片已準備好，請按儲存日誌與照片。';
+    }catch(err){status.textContent=err.message;}
+    finally{fields.journalPhotos.value='';drawPhotos();button.disabled=false;}
   };
 
   async function post(action, data) {
@@ -87,7 +113,7 @@ export function journalForm(main, item, open) {
     const button=form.querySelector('.button');
     button.disabled=true;
     try {
-      const files=[...fields.journalPhotos.files];
+      const files=[];
       if(files.length>6)throw Error('每次最多加入六張照片。');
       values.newPhotos=[];
       for(const file of files){
@@ -97,13 +123,17 @@ export function journalForm(main, item, open) {
         values.newPhotos.push(canvas.toDataURL('image/jpeg',0.75));
       }
       delete values.journalPhotos;
+      values.newPhotos=pending.map(p=>p.src);
+      values.newPhotoAlts=pending.map(p=>p.alt);
+      values.keptPhotos=kept;
+      values.coverIndex=[...kept,...pending].findIndex(p=>p.src===cover);
       if (local) {
         const result=await post('journal',values);
         location.href='index.html?view=article&type=journal&slug='+encodeURIComponent(result.slug);
       } else {
         const saved=browserItem(item,values);
-        saved.photos=[...saved.photos,...values.newPhotos.map(src=>({src,alt:saved.title+'的拍攝作品'}))];
-        saved.cover ||= values.newPhotos[0] || '';
+        saved.photos=[...kept,...pending];
+        saved.cover=saved.photos[values.coverIndex]?.src||saved.photos[0]?.src||'';
         saveBrowserJournal(saved);
         location.href='index.html?view=article&type=journal&slug='+encodeURIComponent(saved.slug);
       }

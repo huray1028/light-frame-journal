@@ -341,6 +341,6 @@ async function courseControls() {
   };
 }
 render().then(()=>Promise.all([initFeatured(),courseControls()]));
-import { journalForm } from './journal-form.js';
+import { journalForm } from './journal-form.js?v=20261109-photo4';
 import {courseState, mergedLessons, addLesson, saveWork, removeLesson} from './course-store.js';
 import {getBrowserFeatured, isLocalEditor, mergeBrowserJournals, saveBrowserFeatured} from './browser-store.js';
